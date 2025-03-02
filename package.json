@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+     "vercel-build": "npm install && npm run build",
     "dev": "node server.js"
   },
   "dependencies": {
