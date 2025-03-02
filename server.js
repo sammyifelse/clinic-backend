@@ -13,9 +13,12 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 // Middleware
 app.use(cors({
-  origin: "https://clinic-frontend-ruddy.vercel.app/",
-  credentials: true
+  origin: ["https://clinic-frontend-ruddy.vercel.app"],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
 app.use(express.json());
 
 // Connect to MongoDB
