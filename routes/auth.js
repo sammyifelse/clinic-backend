@@ -11,27 +11,30 @@ const router = express.Router();
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
+    console.log('Incoming Request Body:', req.body); // Debugging log
+
     const { name, email, password, role } = req.body;
 
-    // Validate required fields
     if (!name || !email || !password || !role) {
+      console.log('Validation Failed: Missing fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Check if the user already exists
+    if (!['doctor', 'receptionist'].includes(role)) {
+      console.log('Invalid role provided:', role);
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log('Email already exists:', email);
       return res.status(400).json({ message: 'Email already in use' });
     }
 
-    // Hash password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create and save user
     const newUser = new User({ name, email, password: hashedPassword, role });
     await newUser.save();
 
-    // Generate JWT token
     const token = jwt.sign({ userId: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({ token, user: { id: newUser._id, name, email, role } });
@@ -40,6 +43,7 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // Login user
 router.post('/login', async (req, res) => {
