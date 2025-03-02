@@ -12,7 +12,10 @@ const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "https://clinic-frontend-ruddy.vercel.app/",
+  credentials: true
+}));
 app.use(express.json());
 
 // Connect to MongoDB
