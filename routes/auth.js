@@ -20,7 +20,8 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    if (!['doctor', 'receptionist'].includes(role)) {
+    const validRoles = ['patient', 'doctor', 'admin']; // Directly define valid roles here
+    if (!validRoles.includes(role)) {
       console.log('Invalid role provided:', role);
       return res.status(400).json({ message: 'Invalid role' });
     }
