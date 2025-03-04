@@ -13,7 +13,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 // Middleware
 app.use(cors({
-  origin: ["https://clinic-frontend-ruddy.vercel.app"],
+  origin: ["https://clinic-frontend.netlify.app"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"]
