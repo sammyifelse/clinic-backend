@@ -55,44 +55,51 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Register a new patient
+// routes/patients.js
 router.post('/', auth, async (req, res) => {
+  const { error } = patientSchema.validate(req.body);
+  if (error) {
+      return res.status(400).json({ message: 'Validation error', error: error.details });
+  }
   console.log("📥 Incoming request data:", req.body); // Debugging log
 
   try {
-    const {
-      fullName,
-      age,
-      phone,
-      address,
-      medicalHistory,
-      currentMedications,
-      allergies,
-      chiefComplaint
-    } = req.body;
+      const {
+          fullName,
+          age,
+          phone,
+          address,
+          medicalHistory,
+          currentMedications,
+          allergies,
+          chiefComplaint,
+          disease, // Add disease field
+          symptoms, // Add symptoms field
+          diagnosis, // Add diagnosis field
+      } = req.body;
 
-    if (!fullName || !age || !phone || !address || !chiefComplaint) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
+      const patient = new Patient({
+          fullName,
+          age,
+          phone,
+          address,
+          medicalHistory,
+          currentMedications,
+          allergies,
+          chiefComplaint,
+          disease, // Add disease field
+          symptoms, // Add symptoms field
+          diagnosis, // Add diagnosis field
+          registeredBy: req.user._id,
+      });
 
-    const patient = new Patient({
-      fullName,
-      age,
-      phone,
-      address,
-      medicalHistory,
-      currentMedications,
-      allergies,
-      chiefComplaint,
-      registeredBy: req.user._id
-    });
+      await patient.save();
+      console.log("✅ Patient saved successfully:", patient);
 
-    await patient.save();
-    console.log("✅ Patient saved successfully:", patient);
-    
-    res.status(201).json(patient);
+      res.status(201).json(patient);
   } catch (error) {
-    console.error("❌ Server error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+      console.error("❌ Server error:", error);
+      res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 

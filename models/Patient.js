@@ -32,6 +32,9 @@ const patientSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  disease: { type: String, trim: true },
+  symptoms: { type: String, trim: true },
+  diagnosis: { type: String, trim: true },
   chiefComplaint: {
     type: String,
     required: true,
