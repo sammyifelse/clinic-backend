@@ -9,7 +9,6 @@ dotenv.config();
 
 const router = express.Router();
 
-// Register a new user
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -18,7 +17,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const validRoles = ['patient', 'doctor', 'admin'];
+    const validRoles = ['doctor', 'receptionist', 'patient', 'admin'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
@@ -41,11 +40,9 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login user
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
@@ -69,7 +66,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get authenticated user info
 router.get('/user', auth, async (req, res) => {
   try {
     res.json({ user: req.user });
