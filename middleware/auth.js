@@ -6,19 +6,20 @@ dotenv.config(); // Load environment variables
 
 export const auth = async (req, res, next) => {
   try {
-    // Extract token from Authorization header
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ message: 'Authentication required' });
+    const authHeader = req.header('Authorization');
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication token missing' });
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'shifa_secret_key');
+    const token = authHeader.split(' ')[1];
 
-    // Find user by ID from decoded token
-    const user = await User.findById(decoded.userId);
-    
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Find user by ID
+    const user = await User.findById(decoded.userId).select('-password'); // Exclude password
+
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
@@ -27,14 +28,14 @@ export const auth = async (req, res, next) => {
     req.token = token;
     next();
   } catch (error) {
-    console.error('Auth Error:', error.message);
+    console.error('Auth Middleware Error:', error.message);
     res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 
 // Doctor authorization middleware
 export const doctorAuth = (req, res, next) => {
-  if (req.user.role !== 'doctor') {
+  if (!req.user || req.user.role !== 'doctor') {
     return res.status(403).json({ message: 'Access denied. Doctors only.' });
   }
   next();

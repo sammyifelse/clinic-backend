@@ -6,29 +6,25 @@ import { auth } from '../middleware/auth.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
 const router = express.Router();
 
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
-    console.log('Incoming Request Body:', req.body); // Debugging log
-
     const { name, email, password, role } = req.body;
 
     if (!name || !email || !password || !role) {
-      console.log('Validation Failed: Missing fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const validRoles = ['patient', 'doctor', 'admin']; // Directly define valid roles here
+    const validRoles = ['patient', 'doctor', 'admin'];
     if (!validRoles.includes(role)) {
-      console.log('Invalid role provided:', role);
       return res.status(400).json({ message: 'Invalid role' });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log('Email already exists:', email);
       return res.status(400).json({ message: 'Email already in use' });
     }
 
@@ -45,30 +41,25 @@ router.post('/register', async (req, res) => {
   }
 });
 
-
 // Login user
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Generate JWT token
     const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.json({ token, user: { id: user._id, name: user.name, email, role: user.role } });
@@ -80,7 +71,12 @@ router.post('/login', async (req, res) => {
 
 // Get authenticated user info
 router.get('/user', auth, async (req, res) => {
-  res.json({ user: req.user });
+  try {
+    res.json({ user: req.user });
+  } catch (error) {
+    console.error('User Fetch Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 export default router;
