@@ -2,23 +2,25 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { auth, doctorAuth } from '../middleware/auth.js';
+import { auth } from '../middleware/auth.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
 const router = express.Router();
 
-// Register a new user (Patients can register without login)
+// Register a new user
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    if (!name || !email || !role) {
+    if (!name || !email || !password || !role) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    if (role === 'doctor' && !password) {
-      return res.status(400).json({ message: 'Password is required for doctors' });
+    const validRoles = ['patient', 'doctor', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
     }
 
     const existingUser = await User.findOne({ email });
@@ -26,18 +28,20 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Email already in use' });
     }
 
-    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ name, email, password: hashedPassword, role });
     await newUser.save();
 
-    res.status(201).json({ message: 'Registration successful', user: { id: newUser._id, name, email, role } });
+    const token = jwt.sign({ userId: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    res.status(201).json({ token, user: { id: newUser._id, name, email, role } });
   } catch (error) {
     console.error('Register Error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Login for doctors only
+// Login user
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -47,8 +51,8 @@ router.post('/login', async (req, res) => {
     }
 
     const user = await User.findOne({ email });
-    if (!user || user.role === 'patient') {
-      return res.status(401).json({ message: 'Access restricted to doctors' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -65,8 +69,8 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get authenticated user info (Doctors only)
-router.get('/user', auth, doctorAuth, async (req, res) => {
+// Get authenticated user info
+router.get('/user', auth, async (req, res) => {
   try {
     res.json({ user: req.user });
   } catch (error) {
