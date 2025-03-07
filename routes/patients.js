@@ -1,146 +1,112 @@
 import express from 'express';
-import Joi from 'joi';
 import Patient from '../models/Patient.js';
 import { auth, doctorAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Define Joi Schema for Validation
-const patientSchema = Joi.object({
-  fullName: Joi.string().required(),
-  age: Joi.number().integer().min(0).required(),
-  gender: Joi.string().valid('Male', 'Female', 'Other').required(),
-  phone: Joi.string().required(),
-  address: Joi.string().required(),
-  medicalHistory: Joi.string().optional(),
-  currentMedications: Joi.string().optional(),
-  allergies: Joi.string().optional(),
-  chiefComplaint: Joi.string().required(),
-});
-
-// Get all patients (doctors see all, others see their own)
-router.get('/', auth, async (req, res) => {
+// Get all patients (doctors only)
+router.get('/', auth, doctorAuth, async (req, res) => {
   try {
-    let patients;
-
-    if (req.user.role === 'doctor') {
-      patients = await Patient.find().sort({ createdAt: -1 });
-    } else {
-      patients = await Patient.find({ registeredBy: req.user._id }).sort({ createdAt: -1 });
-    }
-
+    const patients = await Patient.find().sort({ createdAt: -1 });
     res.json(patients);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching patients:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Get a specific patient
+// Register new patient
+router.post('/', auth, async (req, res) => {
+  try {
+    const {
+      fullName,
+      age,
+      gender,
+      phone,
+      address,
+      medicalHistory,
+      currentMedications,
+      allergies,
+      disease,
+      symptoms,
+      diagnosis,
+      chiefComplaint
+    } = req.body;
+
+    // Create new patient
+    const patient = new Patient({
+      fullName,
+      age,
+      gender,
+      phone,
+      address,
+      medicalHistory,
+      currentMedications,
+      allergies,
+      disease,
+      symptoms,
+      diagnosis,
+      chiefComplaint,
+      registeredBy: req.user._id // Add the user who registered the patient
+    });
+
+    await patient.save();
+    res.status(201).json({ message: 'Patient registered successfully', patient });
+  } catch (error) {
+    console.error('Error registering patient:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get patient by ID
 router.get('/:id', auth, async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
-
+    
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
     }
-
-    if (req.user.role !== 'doctor' && patient.registeredBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to view this patient' });
-    }
-
+    
     res.json(patient);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching patient:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Register a new patient
-// routes/patients.js
-router.post('/', auth, async (req, res) => {
-  const { error } = patientSchema.validate(req.body);
-  if (error) {
-      return res.status(400).json({ message: 'Validation error', error: error.details });
-  }
-  console.log("📥 Incoming request data:", req.body); // Debugging log
-
-  try {
-      const {
-          fullName,
-          age,
-          phone,
-          address,
-          medicalHistory,
-          currentMedications,
-          allergies,
-          chiefComplaint,
-          disease, // Add disease field
-          symptoms, // Add symptoms field
-          diagnosis, // Add diagnosis field
-      } = req.body;
-
-      const patient = new Patient({
-          fullName,
-          age,
-          phone,
-          address,
-          medicalHistory,
-          currentMedications,
-          allergies,
-          chiefComplaint,
-          disease, // Add disease field
-          symptoms, // Add symptoms field
-          diagnosis, // Add diagnosis field
-          registeredBy: req.user._id,
-      });
-
-      await patient.save();
-      console.log("✅ Patient saved successfully:", patient);
-
-      res.status(201).json(patient);
-  } catch (error) {
-      console.error("❌ Server error:", error);
-      res.status(500).json({ message: "Server error", error: error.message });
-  }
-});
-
-
-// Update patient details (doctors only)
+// Update patient
 router.put('/:id', auth, doctorAuth, async (req, res) => {
-  const { error } = patientSchema.validate(req.body);
-
-  if (error) {
-    return res.status(400).json({ message: 'Validation error', error: error.details });
-  }
-
   try {
     const patient = await Patient.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { $set: req.body },
       { new: true, runValidators: true }
     );
-
+    
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
     }
-
-    res.json(patient);
+    
+    res.json({ message: 'Patient updated successfully', patient });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error updating patient:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Delete patient (doctors only)
+// Delete patient
 router.delete('/:id', auth, doctorAuth, async (req, res) => {
   try {
     const patient = await Patient.findByIdAndDelete(req.params.id);
-
+    
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
     }
-
+    
     res.json({ message: 'Patient deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error deleting patient:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
