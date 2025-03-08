@@ -32,6 +32,7 @@ mongoose.connect(MONGODB_URI, {})
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/attendance', require('./routes/attendance'));
 
 // Basic API Route
 app.get('/', (req, res) => {
