@@ -41,29 +41,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-
-// Add attendance (Doctor Only)
-router.post('/add', auth, doctorAuth, async (req, res) => {
-  try {
-    const { firstDate, patientName, serialId, caseOf, remedy, paymentMethod } = req.body;
-    
-    if (!firstDate || !patientName || !serialId || !caseOf || !remedy || !paymentMethod) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-    
-    const newAttendance = new Attendance({
-      firstDate, patientName, serialId, caseOf, remedy, paymentMethod,
-      doctorId: req.user._id
-    });
-    await newAttendance.save();
-    res.status(201).json({ message: 'Attendance recorded successfully' });
-  } catch (error) {
-    console.error('Attendance Error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-
 // Login user
 router.post('/login', async (req, res) => {
   try {
