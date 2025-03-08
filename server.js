@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import patientRoutes from './routes/patients.js';
+import attendanceRoutes from './routes/attendance.js';
 
 dotenv.config();
 
@@ -32,7 +33,7 @@ mongoose.connect(MONGODB_URI, {})
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
-app.use('/api/attendance', require('./routes/attendance'));
+app.use('/api/attendance', attendanceRoutes);
 
 // Basic API Route
 app.get('/', (req, res) => {
