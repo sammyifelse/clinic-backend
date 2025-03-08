@@ -8,7 +8,16 @@ const router = express.Router();
 router.get('/', auth, doctorAuth, async (req, res) => {
   try {
     const patients = await Patient.find().sort({ createdAt: -1 });
-    res.json(patients);
+
+    // Add serial numbers (reverse order)
+    const patientsWithSerial = patients.map((patient, index, array) => {
+      return {
+        ...patient._doc,
+        serialNumber: array.length - index, // Calculate serial number
+      };
+    });
+
+    res.json(patientsWithSerial);
   } catch (error) {
     console.error('Error fetching patients:', error);
     res.status(500).json({ message: 'Server error' });
